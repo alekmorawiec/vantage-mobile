@@ -1,52 +1,52 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, StyleSheet, View } from "react-native";
+import { useState } from "react";
+
+import { LoginScreen } from "./src/screens/auth/LoginScreen";
+import { PatientHomeScreen } from "./src/screens/patient/PatientHomeScreen";
+import { ProviderHomeScreen } from "./src/screens/provider/ProviderHomeScreen";
+import { colors } from "./src/theme/colors";
+import type { AppUser, UserRole } from "./src/types/auth";
 
 export default function App() {
+  const [user, setUser] = useState<AppUser | null>(null);
+
+  function handleLogin(role: UserRole) {
+    setUser({
+      id: role === "patient" ? "demo-patient" : "demo-provider",
+      name: role === "patient" ? "Patient A" : "Alek",
+      email:
+        role === "patient"
+          ? "patient@gmail.com"
+          : "provider@vantage.com",
+      role,
+    });
+  }
+
   return (
-    <View style={styles.container}>
-      <View style={styles.logo}>
-        <Text style={styles.logoText}>V</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.app}>
+        {!user ? (
+          <LoginScreen onLogin={handleLogin} />
+        ) : user.role === "patient" ? (
+          <PatientHomeScreen user={user} onLogout={() => setUser(null)} />
+        ) : (
+          <ProviderHomeScreen user={user} onLogout={() => setUser(null)} />
+        )}
       </View>
 
-      <Text style={styles.title}>VANTAGE</Text>
-      <Text style={styles.subtitle}>Recover smarter.</Text>
-
       <StatusBar style="light" />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "#0A0C0D",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
+    backgroundColor: colors.background,
   },
-  logo: {
-    width: 72,
-    height: 72,
-    borderRadius: 22,
-    backgroundColor: "#2EE6A6",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-  },
-  logoText: {
-    color: "#04140F",
-    fontSize: 30,
-    fontWeight: "900",
-  },
-  title: {
-    color: "#F4F6F5",
-    fontSize: 30,
-    fontWeight: "900",
-    letterSpacing: 2,
-  },
-  subtitle: {
-    color: "#8A9591",
-    fontSize: 16,
-    marginTop: 8,
+  app: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
 });
