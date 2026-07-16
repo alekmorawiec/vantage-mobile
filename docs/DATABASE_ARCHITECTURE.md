@@ -6,11 +6,13 @@ This document describes the first version-controlled Supabase database foundatio
 
 ## Identity and provisioning
 
-`public.profiles` is a one-to-one application identity record for `auth.users`. The authoritative identity key is the UUID shared by `auth.users.id` and `profiles.id`; email is a nullable contact/login attribute, not an identity key. An `auth.users` `AFTER INSERT` trigger calls `public.handle_new_user()` to create a profile and a patient record for every signup.
+`public.profiles` is a one-to-one application identity record for `auth.users`. The authoritative identity key is the UUID shared by `auth.users.id` and `profiles.id`; email is a nullable contact/login attribute, not an identity key. An `auth.users` `AFTER INSERT` trigger calls `public.handle_new_user()` to create a profile and a patient record for every future signup.
 
 The trigger copies only the user's email and optional `raw_user_meta_data.name`. It never reads a role from signup metadata and never creates an organization membership. Provider, staff, and administrator access must be provisioned later by a trusted server-side or administrator workflow.
 
 The trigger is idempotent where practical: profile conflicts refresh the nullable email without overwriting an existing display name, and an existing patient record is left unchanged. It copies `auth.users.email` when present and stores `NULL` when Auth has no email; it never fabricates a placeholder address. Because the trigger runs within the Auth transaction, an uncaught trigger error can block signup. It must be migration-tested before remote deployment.
+
+The follow-up migration `20260716010000_backfill_existing_auth_users.sql` provisions missing profiles and patient rows for Auth users created before the trigger existed. It is idempotent, preserves all existing application rows, and does not create organization memberships or interpret role metadata. Backfilled patient rows omit `organization_id` and `clinic_id`, so both remain `NULL` until a trusted enrollment workflow assigns the patient.
 
 ## Tenant model
 
@@ -46,7 +48,7 @@ A shared trigger function maintains `updated_at` for every table that defines th
 
 ## Local workflow
 
-The migration is stored at `supabase/migrations/20260716000000_secure_database_foundation.sql`. The local config disables seeding because this foundation needs no fixture data.
+The foundation and existing-user backfill are stored as ordered migrations under `supabase/migrations`. The local config disables seeding because this foundation needs no fixture data.
 
 The intended full validation workflow is:
 

@@ -6,35 +6,12 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-import type { Session, User } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "../../lib/supabase";
-import type { AppUser, UserRole } from "../../types/auth";
 import type { AuthContextValue } from "./auth.types";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-function toAppUser(user: User | null): AppUser | null {
-  if (!user || !user.email) {
-    return null;
-  }
-
-  const metadata = user.user_metadata ?? {};
-  const role: UserRole =
-    metadata.role === "provider" ? "provider" : "patient";
-
-  return {
-    id: user.id,
-    email: user.email,
-    name:
-      typeof metadata.name === "string" && metadata.name.trim()
-        ? metadata.name
-        : role === "provider"
-          ? "Provider"
-          : "Patient",
-    role,
-  };
-}
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
@@ -79,7 +56,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
     () => ({
       session,
       user: session?.user ?? null,
-      appUser: toAppUser(session?.user ?? null),
       isLoading,
       signIn: async (email, password) => {
         const { error } = await supabase.auth.signInWithPassword({
