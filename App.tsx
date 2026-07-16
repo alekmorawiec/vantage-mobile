@@ -1,52 +1,47 @@
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaView, StyleSheet, View } from "react-native";
-import { useState } from "react";
+import { ActivityIndicator, SafeAreaView, StyleSheet, View } from "react-native";
 
+import { AuthProvider, useAuth } from "./src/features/auth/AuthContext";
 import { LoginScreen } from "./src/screens/auth/LoginScreen";
 import { PatientHomeScreen } from "./src/screens/patient/PatientHomeScreen";
 import { ProviderHomeScreen } from "./src/screens/provider/ProviderHomeScreen";
 import { colors } from "./src/theme/colors";
-import type { AppUser, UserRole } from "./src/types/auth";
 
-export default function App() {
-  const [user, setUser] = useState<AppUser | null>(null);
+function AppContent() {
+  const { appUser, isLoading, signOut } = useAuth();
 
-  function handleLogin(role: UserRole) {
-    setUser({
-      id: role === "patient" ? "demo-patient" : "demo-provider",
-      name: role === "patient" ? "Patient A" : "Alek",
-      email:
-        role === "patient"
-          ? "patient@gmail.com"
-          : "provider@vantage.com",
-      role,
-    });
+  if (isLoading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    );
   }
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.app}>
-        {!user ? (
-          <LoginScreen onLogin={handleLogin} />
-        ) : user.role === "patient" ? (
-          <PatientHomeScreen user={user} onLogout={() => setUser(null)} />
-        ) : (
-          <ProviderHomeScreen user={user} onLogout={() => setUser(null)} />
-        )}
-      </View>
+  if (!appUser) return <LoginScreen />;
 
-      <StatusBar style="light" />
-    </SafeAreaView>
+  return appUser.role === "provider" ? (
+    <ProviderHomeScreen user={appUser} onLogout={signOut} />
+  ) : (
+    <PatientHomeScreen user={appUser} onLogout={signOut} />
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.app}>
+          <AppContent />
+        </View>
+        <StatusBar style="light" />
+      </SafeAreaView>
+    </AuthProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  app: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  app: { flex: 1, backgroundColor: colors.background },
+  loading: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
 });
