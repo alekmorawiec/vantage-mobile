@@ -55,8 +55,7 @@ export function RootNavigator() {
     profile && providerMemberships.length > 0
       ? toAppUser(profile, "provider")
       : null;
-  const patientUser =
-    profile && patient ? toAppUser(profile, "patient") : null;
+  const hasPatientWorkspace = Boolean(profile && patient);
 
   return (
     <NavigationContainer theme={navigationTheme}>
@@ -70,8 +69,8 @@ export function RootNavigator() {
         />
       ) : providerUser ? (
         <ProviderNavigator onLogout={signOut} user={providerUser} />
-      ) : patientUser ? (
-        <PatientNavigator onLogout={signOut} user={patientUser} />
+      ) : hasPatientWorkspace ? (
+        <PatientNavigator onLogout={signOut} />
       ) : (
         <AccountSetupRequiredScreen
           message={

@@ -2,63 +2,117 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
-import { MetricCard } from "../../components/MetricCard";
 import { Screen } from "../../components/Screen";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { SectionHeader } from "../../components/SectionHeader";
+import { useUser } from "../../features/user/UserContext";
 import { colors } from "../../theme/colors";
 import { radii } from "../../theme/radii";
 import { spacing } from "../../theme/spacing";
 import { typography } from "../../theme/typography";
-import type { AppUser } from "../../types/auth";
 
-type PatientHomeScreenProps = { user: AppUser; onLogout: () => void; onCheckIn: () => void };
+type PatientHomeScreenProps = {
+  onLogout: () => void;
+  onCheckIn: () => void;
+};
 
-export function PatientHomeScreen({ user, onLogout, onCheckIn }: PatientHomeScreenProps) {
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) {
+    return "Good morning";
+  }
+
+  if (hour < 18) {
+    return "Good afternoon";
+  }
+
+  return "Good evening";
+}
+
+export function PatientHomeScreen({
+  onLogout,
+  onCheckIn,
+}: PatientHomeScreenProps) {
+  const { profile } = useUser();
+  const displayName = profile?.display_name?.trim() || null;
+  const greeting = getGreeting();
+
   return (
     <Screen scroll contentContainerStyle={styles.content}>
       <ScreenHeader
-        eyebrow="Patient dashboard"
+        eyebrow="Patient home"
         onLogout={onLogout}
-        title={`Good morning, ${user.name}`}
+        title="Today"
       />
 
-      <AppCard style={styles.recoveryCard}>
-        <Text style={styles.cardEyebrow}>Vantage summary · prototype</Text>
-        <Text style={styles.recoveryScore}>84</Text>
-        <Text style={styles.recoveryDetail}>
-          Based on your recent check-ins and activity. This summary tracks
-          trends and does not indicate medical clearance.
+      <View style={styles.greeting}>
+        <Text accessibilityRole="header" style={styles.greetingTitle}>
+          {displayName ? `${greeting}, ${displayName}` : greeting}
+        </Text>
+        <Text style={styles.greetingDetail}>
+          Here’s what’s planned for today.
+        </Text>
+      </View>
+
+      <AppCard style={styles.priorityCard}>
+        <Text style={styles.priorityLabel}>Today’s priority</Text>
+        <Text accessibilityRole="header" style={styles.priorityTitle}>
+          Complete today’s check-in
+        </Text>
+        <Text style={styles.priorityDetail}>
+          Share a quick update on how you’re feeling to help keep your care
+          team informed.
+        </Text>
+        <Text style={styles.estimatedTime}>Less than 1 minute</Text>
+        <AppButton
+          accessibilityLabel="Start today’s check-in"
+          label="Start check-in"
+          onPress={onCheckIn}
+          style={styles.priorityAction}
+        />
+      </AppCard>
+
+      <SectionHeader title="Today’s exercises" />
+      <AppCard>
+        <Text style={styles.cardTitle}>No exercises assigned yet</Text>
+        <Text style={styles.cardDetail}>
+          Your prescribed exercises will appear here when they’re assigned by
+          your care team.
         </Text>
       </AppCard>
 
-      <View style={styles.metricsRow}>
-        <MetricCard label="HEP adherence" value="91%" detail="6-day streak" accent="amber" />
-        <MetricCard label="VALD LSI" value="93%" detail="+7% from baseline" accent="green" />
-      </View>
-
-      <SectionHeader title="Today" />
-
-      <AppCard style={styles.checkInCard}>
-        <View style={styles.taskCopy}>
-          <Text style={styles.checkInTitle}>Daily check-in</Text>
-          <Text style={styles.checkInDetail}>Share how you’re feeling · about 60 seconds</Text>
-        </View>
-        <AppButton accessibilityLabel="Start daily check-in" label="Start check-in" onPress={onCheckIn} />
+      <SectionHeader title="Recovery summary" />
+      <AppCard style={styles.recoveryCard}>
+        <Text style={styles.summaryLabel}>Vantage summary · pre-data</Text>
+        <Text style={styles.cardTitle}>Your summary is still taking shape</Text>
+        <Text style={styles.cardDetail}>
+          Future summaries will reflect approved inputs such as your check-ins,
+          activity, and symptoms when that information is available.
+        </Text>
+        <Text style={styles.disclaimer}>
+          This summary tracks trends and does not indicate medical clearance.
+        </Text>
       </AppCard>
 
-      <AppCard style={styles.taskCard}>
-        <View>
-          <Text style={styles.taskTitle}>Home exercise program</Text>
-          <Text style={styles.taskDetail}>4 prescribed exercises</Text>
-        </View>
-        <Text style={styles.taskAction}>View →</Text>
-      </AppCard>
-
-      <SectionHeader title="Next appointment" />
+      <SectionHeader title="Progress" />
       <AppCard>
-        <Text style={styles.appointmentDate}>Thu, Jul 16 · 2:30 PM</Text>
-        <Text style={styles.appointmentDetail}>with Provider · Visit 9 of 12</Text>
+        <Text style={styles.cardTitle}>
+          Progress trends will appear as you complete check-ins
+        </Text>
+        <Text style={styles.cardDetail}>
+          Your provider’s assigned measures will appear here when available.
+        </Text>
+      </AppCard>
+
+      <SectionHeader title="Upcoming care" />
+      <AppCard>
+        <Text style={styles.cardTitle}>
+          Appointments aren’t available in Vantage yet
+        </Text>
+        <Text style={styles.cardDetail}>
+          Future appointments will appear here when scheduling is connected.
+        </Text>
       </AppCard>
     </Screen>
   );
@@ -66,47 +120,56 @@ export function PatientHomeScreen({ user, onLogout, onCheckIn }: PatientHomeScre
 
 const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xxxl },
-  recoveryCard: {
+  greeting: { marginTop: spacing.xl },
+  greetingTitle: { ...typography.sectionTitle, color: colors.text },
+  greetingDetail: {
+    ...typography.bodyMuted,
+    marginTop: spacing.xs,
+    color: colors.textMuted,
+  },
+  priorityCard: {
     marginTop: spacing.xl,
-    borderColor: "#1E3B2F",
+    borderColor: "#2EE6A650",
     borderRadius: radii.xl,
     backgroundColor: "#102019",
     padding: spacing.xl,
   },
-  cardEyebrow: { ...typography.label, color: colors.textMuted },
-  recoveryScore: {
+  priorityLabel: { ...typography.label, color: colors.accent },
+  priorityTitle: {
+    ...typography.screenTitle,
     marginTop: spacing.sm,
-    color: colors.accent,
-    fontSize: 54,
-    fontWeight: "800",
-    letterSpacing: -1.5,
-    lineHeight: 60,
+    color: colors.text,
   },
-  recoveryDetail: {
-    ...typography.caption,
-    maxWidth: 310,
-    marginTop: spacing.xs,
+  priorityDetail: {
+    ...typography.body,
+    marginTop: spacing.md,
     color: colors.textMuted,
   },
-  metricsRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.md },
-  checkInCard: {
-    gap: spacing.lg,
-    borderColor: "#2EE6A645",
-    backgroundColor: "#102019",
-    padding: spacing.xl,
-  },
-  taskCopy: { gap: spacing.xs },
-  checkInTitle: { ...typography.sectionTitle, color: colors.text },
-  checkInDetail: { ...typography.bodyMuted, color: colors.textMuted },
-  taskCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  estimatedTime: {
+    ...typography.caption,
     marginTop: spacing.md,
+    color: colors.text,
+    fontWeight: "700",
   },
-  taskTitle: { ...typography.body, color: colors.text, fontWeight: "700" },
-  taskDetail: { ...typography.caption, marginTop: spacing.xs, color: colors.textMuted },
-  taskAction: { ...typography.button, color: colors.accent },
-  appointmentDate: { ...typography.sectionTitle, color: colors.text },
-  appointmentDetail: { ...typography.bodyMuted, marginTop: spacing.sm, color: colors.textMuted },
+  priorityAction: { marginTop: spacing.xl },
+  cardTitle: { ...typography.sectionTitle, color: colors.text },
+  cardDetail: {
+    ...typography.bodyMuted,
+    marginTop: spacing.sm,
+    color: colors.textMuted,
+  },
+  recoveryCard: { backgroundColor: colors.surfaceRaised },
+  summaryLabel: {
+    ...typography.label,
+    marginBottom: spacing.sm,
+    color: colors.textSubtle,
+  },
+  disclaimer: {
+    ...typography.caption,
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    color: colors.textMuted,
+  },
 });

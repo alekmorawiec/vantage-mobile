@@ -7,7 +7,6 @@ import { PatientHomeScreen } from "../screens/patient/PatientHomeScreen";
 import { FeaturePlaceholderScreen } from "../screens/shared/FeaturePlaceholderScreen";
 import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
-import type { AppUser } from "../types/auth";
 import type { PatientTabParamList } from "./navigation.types";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
@@ -26,11 +25,10 @@ const tabIcons: Record<
 };
 
 type PatientNavigatorProps = {
-  user: AppUser;
   onLogout: () => void;
 };
 
-export function PatientNavigator({ user, onLogout }: PatientNavigatorProps) {
+export function PatientNavigator({ onLogout }: PatientNavigatorProps) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -62,7 +60,6 @@ export function PatientNavigator({ user, onLogout }: PatientNavigatorProps) {
           <PatientHomeScreen
             onCheckIn={() => navigation.navigate("CheckIn")}
             onLogout={onLogout}
-            user={user}
           />
         )}
       </Tab.Screen>
