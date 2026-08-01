@@ -1,5 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  Animated,
+  StyleSheet,
+  Text,
+  View,
+  type ScrollView,
+} from "react-native";
 
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
@@ -238,8 +246,13 @@ export function DailyCheckInScreen({
   const [validationMessage, setValidationMessage] = useState<string | null>(
     null,
   );
+  const [reduceMotionEnabled, setReduceMotionEnabled] = useState(true);
+  const progressAnimation = useRef(new Animated.Value(1 / 3)).current;
+  const scrollViewRef = useRef<ScrollView | null>(null);
+  const announceStepChange = useRef(false);
 
   useEffect(() => {
+    announceStepChange.current = false;
     setStep(1);
     setDraft(emptyDraft);
     setEditing(false);
@@ -255,14 +268,77 @@ export function DailyCheckInScreen({
     !editing &&
     !hasDraftValues(draft);
 
-  const progressWidth = `${(step / 3) * 100}%` as `${number}%`;
   const stepTitle =
     step === 1
       ? "Symptoms"
       : step === 2
-        ? "Daily context"
+        ? "Sleep and energy"
         : "Anything concerning?";
   const sleepDurationMinutes = getSleepDurationMinutes(draft);
+  const formVisible =
+    !loading && !showLoadError && !(savedTodayCheckIn && !editing);
+  const animatedProgressWidth = progressAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", "100%"],
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (active) {
+        setReduceMotionEnabled(enabled);
+      }
+    });
+
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setReduceMotionEnabled,
+    );
+
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const targetProgress = step / 3;
+
+    progressAnimation.stopAnimation();
+
+    if (reduceMotionEnabled) {
+      progressAnimation.setValue(targetProgress);
+      return;
+    }
+
+    const animation = Animated.timing(progressAnimation, {
+      duration: 240,
+      toValue: targetProgress,
+      useNativeDriver: false,
+    });
+
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
+  }, [progressAnimation, reduceMotionEnabled, step]);
+
+  useEffect(() => {
+    if (!formVisible) {
+      return;
+    }
+
+    scrollViewRef.current?.scrollTo({ animated: false, y: 0 });
+
+    if (announceStepChange.current) {
+      AccessibilityInfo.announceForAccessibility(
+        `Step ${step} of 3. ${stepTitle}.`,
+      );
+      announceStepChange.current = false;
+    }
+  }, [editing, formVisible, patient?.id, step, stepTitle]);
 
   const stepValidationMessage = useMemo(() => {
     if (step === 1) {
@@ -333,6 +409,11 @@ export function DailyCheckInScreen({
     }
   }
 
+  function moveToStep(nextStep: Step) {
+    announceStepChange.current = true;
+    setStep(nextStep);
+  }
+
   function handleBack() {
     setValidationMessage(null);
 
@@ -341,7 +422,7 @@ export function DailyCheckInScreen({
       return;
     }
 
-    setStep((current) => (current === 3 ? 2 : 1));
+    moveToStep(step === 3 ? 2 : 1);
   }
 
   async function handleContinue() {
@@ -353,7 +434,7 @@ export function DailyCheckInScreen({
     setValidationMessage(null);
 
     if (step < 3) {
-      setStep((current) => (current === 1 ? 2 : 3));
+      moveToStep(step === 1 ? 2 : 3);
       return;
     }
 
@@ -393,6 +474,7 @@ export function DailyCheckInScreen({
     }
 
     setDraft(draftFromCheckIn(savedTodayCheckIn));
+    announceStepChange.current = true;
     setStep(1);
     setValidationMessage(null);
     setEditing(true);
@@ -465,27 +547,29 @@ export function DailyCheckInScreen({
     <Screen
       scroll
       contentContainerStyle={styles.formContent}
+      scrollViewRef={scrollViewRef}
       scrollViewProps={{
         automaticallyAdjustKeyboardInsets: true,
         keyboardDismissMode: "interactive",
         keyboardShouldPersistTaps: "handled",
       }}
     >
-      <ScreenHeader eyebrow="Daily update" title="Check-In" />
-
       <View style={styles.progressSection}>
+        <Text style={styles.screenContext}>Check-In</Text>
         <Text style={styles.stepLabel}>Step {step} of 3</Text>
+        <Text accessibilityRole="header" style={styles.stepTitle}>
+          {stepTitle}
+        </Text>
         <View
-          accessibilityLabel={`Step ${step} of 3`}
+          accessibilityLabel={`Check-in progress, step ${step} of 3`}
           accessibilityRole="progressbar"
           accessibilityValue={{ min: 1, max: 3, now: step }}
           style={styles.progressTrack}
         >
-          <View style={[styles.progressFill, { width: progressWidth }]} />
+          <Animated.View
+            style={[styles.progressFill, { width: animatedProgressWidth }]}
+          />
         </View>
-        <Text accessibilityRole="header" style={styles.stepTitle}>
-          {stepTitle}
-        </Text>
       </View>
 
       {step === 1 ? (
@@ -747,12 +831,23 @@ const styles = StyleSheet.create({
   },
   completionPrimaryAction: { marginTop: spacing.xl },
   completionSecondaryAction: { marginTop: spacing.md },
-  progressSection: { marginTop: spacing.xl },
-  stepLabel: { ...typography.label, color: colors.accent },
+  progressSection: {},
+  screenContext: { ...typography.label, color: colors.textMuted },
+  stepLabel: {
+    ...typography.bodyMuted,
+    marginTop: spacing.xs,
+    color: colors.accent,
+    fontWeight: "700",
+  },
+  stepTitle: {
+    ...typography.screenTitle,
+    marginTop: spacing.xs,
+    color: colors.text,
+  },
   progressTrack: {
     height: 4,
     overflow: "hidden",
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
     borderRadius: radii.pill,
     backgroundColor: colors.border,
   },
@@ -760,11 +855,6 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: radii.pill,
     backgroundColor: colors.accent,
-  },
-  stepTitle: {
-    ...typography.screenTitle,
-    marginTop: spacing.lg,
-    color: colors.text,
   },
   questions: { gap: spacing.xxl, marginTop: spacing.xl },
   question: {

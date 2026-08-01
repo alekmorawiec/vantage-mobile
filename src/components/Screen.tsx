@@ -6,7 +6,7 @@ import {
   type ScrollViewProps,
   type ViewProps,
 } from "react-native";
-import { useEffect, useRef, type PropsWithChildren } from "react";
+import { useEffect, useRef, type PropsWithChildren, type Ref } from "react";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 
 import { colors } from "../theme/colors";
@@ -20,6 +20,7 @@ type ScreenProps = PropsWithChildren<{
     ScrollViewProps,
     "children" | "contentContainerStyle" | "style"
   >;
+  scrollViewRef?: Ref<ScrollView>;
   style?: ViewProps["style"];
 }>;
 
@@ -29,6 +30,7 @@ export function Screen({
   scroll = false,
   contentContainerStyle,
   scrollViewProps,
+  scrollViewRef,
   style,
 }: ScreenProps) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -48,6 +50,7 @@ export function Screen({
           <ScrollView
             {...scrollViewProps}
             contentContainerStyle={[styles.content, contentContainerStyle]}
+            ref={scrollViewRef}
             showsVerticalScrollIndicator={false}
             style={styles.scrollView}
           >
