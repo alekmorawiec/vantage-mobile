@@ -40,11 +40,65 @@ Access is intentionally limited:
 - Active organization admins can read patients and assignments within their organization only while the organization is active.
 - No client mutation policy exists for organizations, clinics, memberships, patients, or assignments.
 
+### Patient daily check-ins
+
+`public.patient_check_ins` stores the raw patient-reported inputs collected by
+the Daily Check-In workflow. A record contains symptom intensity and change,
+sleep quality, energy, a patient-declared concerning-change flag, and an
+optional note. These values are not a validated instrument, are not converted
+into a Recovery Score, and do not create an alert classification.
+
+There is at most one check-in per patient-local calendar day. Patients may
+update that record only while the current server-derived local date still
+matches its `check_in_date`; complete patient history remains readable, but
+past local-day records are read-only. The database records `created_at` and
+`updated_at` as authoritative server timestamps. A private write trigger
+derives `check_in_date` from the server's statement timestamp plus the device's
+submitted UTC offset, so the client cannot choose the stored date. The same
+server-time calculation is part of the update policy. The offset is retained
+as immutable submission context; it is not an authoritative patient timezone
+and does not replace a future timezone model if one becomes necessary.
+
+The same trigger derives `organization_id` from the authoritative patient row
+at insertion time. This value is a submission-time tenant snapshot and is
+immutable afterward. A check-in submitted while the patient is unassigned
+keeps a `NULL` snapshot even if the patient is enrolled later. The migration
+intentionally does not add a composite foreign key to the patient's current
+organization: a non-cascading composite key would block a later patient
+transfer, while a cascading key would silently rewrite historical snapshots.
+`organization_id` instead has a restrictive foreign key to `organizations`,
+preserving the referenced tenant without rewriting old check-ins.
+Patient-transfer rules and historical provider access must be designed and
+security-reviewed as a separate workflow.
+
+The patient foreign key is restrictive rather than cascading. A patient row
+cannot be removed while historical check-ins reference it, so deleting a
+patient workspace cannot silently erase health-related records. Retention,
+account deletion, and any intentional check-in deletion require a separately
+reviewed workflow.
+
+In this phase, authenticated patients may select, insert, and update only
+their own check-ins. Column-level grants prevent clients from supplying or
+changing the organization snapshot, local date, ownership, or audit
+timestamps. There is no patient delete access and no provider, administrator,
+or staff read policy. Future provider review must continue to require an
+active assignment and active organization; it must not be inferred from the
+snapshot alone.
+
+Check-in notes may contain sensitive health information. Application code,
+analytics, diagnostics, and error reporting must never log note contents.
+
 Small `SECURITY DEFINER` predicate functions in the non-exposed `private` schema perform membership and relationship checks, including the organization's current status. Their empty `search_path`, fully qualified relations, restricted execute grants, and boolean-only results reduce attack surface. They also avoid recursive policy evaluation between memberships, patients, and assignments. Suspending or archiving an organization therefore removes tenant-scoped reads without changing its membership rows.
 
 ## Timestamps and indexes
 
 A shared trigger function maintains `updated_at` for every table that defines that column. Foreign keys and common RLS lookup paths have supporting indexes, including partial indexes for active memberships and assignments.
+
+Daily check-ins use their dedicated private write trigger because it also
+derives immutable submission context. Their unique patient/date constraint
+supports same-day lookup and prevents duplicate daily records. A partial
+organization/date index is reserved for a future, separately authorized tenant
+review workflow; no alert-specific index exists.
 
 ## Local workflow
 
