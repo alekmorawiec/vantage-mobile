@@ -5,6 +5,10 @@ import { AppCard } from "../../components/AppCard";
 import { Screen } from "../../components/Screen";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { SectionHeader } from "../../components/SectionHeader";
+import {
+  getDeviceLocalDay,
+  useDailyCheckIn,
+} from "../../features/check-in/DailyCheckInContext";
 import { useUser } from "../../features/user/UserContext";
 import { colors } from "../../theme/colors";
 import { radii } from "../../theme/radii";
@@ -35,8 +39,33 @@ export function PatientHomeScreen({
   onCheckIn,
 }: PatientHomeScreenProps) {
   const { profile } = useUser();
+  const { error, loading, todayCheckIn } = useDailyCheckIn();
   const displayName = profile?.display_name?.trim() || null;
   const greeting = getGreeting();
+  const currentExpectedDate = getDeviceLocalDay(new Date()).expectedDate;
+  const isTodayComplete =
+    todayCheckIn?.check_in_date === currentExpectedDate;
+  const priorityTitle = loading
+    ? "Checking today’s check-in"
+    : error
+      ? "Check-in status unavailable"
+      : isTodayComplete
+        ? "Today’s check-in is complete"
+        : "Complete today’s check-in";
+  const priorityDetail = loading
+    ? "We’re confirming whether today’s update is already saved."
+    : error
+      ? "Open Check-In to retry without losing any responses you’ve entered."
+      : isTodayComplete
+        ? "Your responses are saved and can still be updated today."
+        : "Share a quick update on how you’re feeling to help keep your care team informed.";
+  const priorityActionLabel = loading
+    ? "Checking status"
+    : error
+      ? "Open check-in"
+      : isTodayComplete
+        ? "View or update"
+        : "Start check-in";
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
@@ -58,16 +87,24 @@ export function PatientHomeScreen({
       <AppCard style={styles.priorityCard}>
         <Text style={styles.priorityLabel}>Today’s priority</Text>
         <Text accessibilityRole="header" style={styles.priorityTitle}>
-          Complete today’s check-in
+          {priorityTitle}
         </Text>
-        <Text style={styles.priorityDetail}>
-          Share a quick update on how you’re feeling to help keep your care
-          team informed.
+        <Text style={styles.priorityDetail}>{priorityDetail}</Text>
+        <Text style={styles.estimatedTime}>
+          {loading
+            ? "Checking securely"
+            : isTodayComplete
+              ? "Saved for today"
+              : "Less than 1 minute"}
         </Text>
-        <Text style={styles.estimatedTime}>Less than 1 minute</Text>
         <AppButton
-          accessibilityLabel="Start today’s check-in"
-          label="Start check-in"
+          accessibilityLabel={
+            isTodayComplete
+              ? "View or update today’s check-in"
+              : "Open today’s check-in"
+          }
+          disabled={loading}
+          label={priorityActionLabel}
           onPress={onCheckIn}
           style={styles.priorityAction}
         />

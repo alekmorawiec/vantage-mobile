@@ -48,6 +48,20 @@ sleep quality, energy, a patient-declared concerning-change flag, and an
 optional note. These values are not a validated instrument, are not converted
 into a Recovery Score, and do not create an alert classification.
 
+The optional `symptom_descriptors` array uses only the approved raw vocabulary:
+`sharp`, `dull`, `achy`, `throbbing`, `burning`, `tingling`, `numbness`,
+`stiffness`, `pressure`, and `other`. A check-in may store no more than three
+unique descriptors. `sleep_duration_minutes` stores the patient-reported total
+sleep duration as minutes, without deriving a clinical interpretation from
+either field.
+
+The descriptor column safely backfills existing rows with an empty array. Sleep
+duration is not fabricated for historical rows, so its column remains nullable.
+A `NOT VALID` required-value check preserves those existing null rows while
+still requiring a non-null duration on every future insert or update. The
+application also requires sleep duration for all new submissions. Historical
+rows with a null duration remain readable.
+
 There is at most one check-in per patient-local calendar day. Patients may
 update that record only while the current server-derived local date still
 matches its `check_in_date`; complete patient history remains readable, but
@@ -85,8 +99,9 @@ or staff read policy. Future provider review must continue to require an
 active assignment and active organization; it must not be inferred from the
 snapshot alone.
 
-Check-in notes may contain sensitive health information. Application code,
-analytics, diagnostics, and error reporting must never log note contents.
+Check-in notes, symptom descriptors, and sleep duration may contain sensitive
+health information. Application code, analytics, diagnostics, and error
+reporting must never log these raw values or complete check-in responses.
 
 Small `SECURITY DEFINER` predicate functions in the non-exposed `private` schema perform membership and relationship checks, including the organization's current status. Their empty `search_path`, fully qualified relations, restricted execute grants, and boolean-only results reduce attack surface. They also avoid recursive policy evaluation between memberships, patients, and assignments. Suspending or archiving an organization therefore removes tenant-scoped reads without changing its membership rows.
 

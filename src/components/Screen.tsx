@@ -16,6 +16,10 @@ type ScreenProps = PropsWithChildren<{
   edges?: Edge[];
   scroll?: boolean;
   contentContainerStyle?: ScrollViewProps["contentContainerStyle"];
+  scrollViewProps?: Omit<
+    ScrollViewProps,
+    "children" | "contentContainerStyle" | "style"
+  >;
   style?: ViewProps["style"];
 }>;
 
@@ -24,6 +28,7 @@ export function Screen({
   edges = ["top", "left", "right"],
   scroll = false,
   contentContainerStyle,
+  scrollViewProps,
   style,
 }: ScreenProps) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -41,6 +46,7 @@ export function Screen({
       <Animated.View style={[styles.animated, { opacity }]}>
         {scroll ? (
           <ScrollView
+            {...scrollViewProps}
             contentContainerStyle={[styles.content, contentContainerStyle]}
             showsVerticalScrollIndicator={false}
             style={styles.scrollView}

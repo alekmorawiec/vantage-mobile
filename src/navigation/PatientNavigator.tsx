@@ -3,6 +3,8 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import type { ComponentProps } from "react";
 import { StyleSheet } from "react-native";
 
+import { DailyCheckInProvider } from "../features/check-in/DailyCheckInContext";
+import { DailyCheckInScreen } from "../screens/patient/DailyCheckInScreen";
 import { PatientHomeScreen } from "../screens/patient/PatientHomeScreen";
 import { FeaturePlaceholderScreen } from "../screens/shared/FeaturePlaceholderScreen";
 import { colors } from "../theme/colors";
@@ -29,6 +31,14 @@ type PatientNavigatorProps = {
 };
 
 export function PatientNavigator({ onLogout }: PatientNavigatorProps) {
+  return (
+    <DailyCheckInProvider>
+      <PatientTabs onLogout={onLogout} />
+    </DailyCheckInProvider>
+  );
+}
+
+function PatientTabs({ onLogout }: PatientNavigatorProps) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -75,13 +85,9 @@ export function PatientNavigator({ onLogout }: PatientNavigatorProps) {
         )}
       </Tab.Screen>
       <Tab.Screen name="CheckIn" options={{ title: "Check-In" }}>
-        {() => (
-          <FeaturePlaceholderScreen
-            description="Share a quick update on pain, sleep, and changing symptoms with your care team."
-            detail="A focused daily check-in designed to take about 60 seconds."
-            eyebrow="Daily update"
-            includeTopInset
-            title="Check-In"
+        {({ navigation }) => (
+          <DailyCheckInScreen
+            onReturnHome={() => navigation.navigate("Home")}
           />
         )}
       </Tab.Screen>
