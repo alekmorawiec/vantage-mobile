@@ -3,7 +3,6 @@ import {
   type NativeStackScreenProps,
 } from "@react-navigation/native-stack";
 import { StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ProviderHomeScreen } from "../screens/provider/ProviderHomeScreen";
 import { FeaturePlaceholderScreen } from "../screens/shared/FeaturePlaceholderScreen";
@@ -70,11 +69,7 @@ export function ProviderNavigator({ user, onLogout }: ProviderNavigatorProps) {
         name="ProviderDashboard"
         options={{ headerShown: false, title: "Provider Dashboard" }}
       >
-        {() => (
-          <SafeAreaView edges={["top", "left", "right"]} style={styles.scene}>
-            <ProviderHomeScreen onLogout={onLogout} user={user} />
-          </SafeAreaView>
-        )}
+        {() => <ProviderHomeScreen onLogout={onLogout} user={user} />}
       </Stack.Screen>
       <Stack.Screen
         component={CaseloadScreen}

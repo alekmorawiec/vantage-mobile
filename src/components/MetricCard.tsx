@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { colors } from "../theme/colors";
 import { radii } from "../theme/radii";
 import { spacing } from "../theme/spacing";
+import { typography } from "../theme/typography";
 
 type MetricCardProps = {
   label: string;
@@ -44,20 +45,16 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   label: {
+    ...typography.label,
     color: colors.textSubtle,
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1,
-    textTransform: "uppercase",
   },
   value: {
+    ...typography.metric,
     marginTop: spacing.sm,
-    fontSize: 28,
-    fontWeight: "900",
   },
   detail: {
+    ...typography.caption,
     marginTop: spacing.xs,
     color: colors.textMuted,
-    fontSize: 12,
   },
 });

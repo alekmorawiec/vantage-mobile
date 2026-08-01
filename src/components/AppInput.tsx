@@ -3,12 +3,15 @@ import { StyleSheet, Text, TextInput, View, type TextInputProps } from "react-na
 import { colors } from "../theme/colors";
 import { radii } from "../theme/radii";
 import { spacing } from "../theme/spacing";
+import { typography } from "../theme/typography";
 
 type AppInputProps = TextInputProps & {
   label: string;
 };
 
 export function AppInput({ label, style, ...props }: AppInputProps) {
+  const isMultiline = props.multiline === true;
+
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>{label}</Text>
@@ -16,7 +19,11 @@ export function AppInput({ label, style, ...props }: AppInputProps) {
         {...props}
         placeholderTextColor={colors.textSubtle}
         selectionColor={colors.accent}
-        style={[styles.input, style]}
+        style={[
+          styles.input,
+          isMultiline ? styles.multilineInput : styles.singleLineInput,
+          style,
+        ]}
       />
     </View>
   );
@@ -27,11 +34,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   label: {
+    ...typography.label,
     color: colors.textSubtle,
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.1,
-    textTransform: "uppercase",
   },
   input: {
     minHeight: 52,
@@ -41,6 +45,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     color: colors.text,
     paddingHorizontal: spacing.lg,
-    fontSize: 15,
+    ...typography.input,
+  },
+  singleLineInput: {
+    height: 52,
+    paddingVertical: 0,
+  },
+  multilineInput: {
+    paddingVertical: spacing.md,
+    lineHeight: typography.body.lineHeight,
   },
 });

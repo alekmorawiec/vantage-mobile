@@ -5,6 +5,7 @@ import { AppButton } from "../../components/AppButton";
 import { colors } from "../../theme/colors";
 import { radii } from "../../theme/radii";
 import { spacing } from "../../theme/spacing";
+import { typography } from "../../theme/typography";
 
 type UserDataErrorScreenProps = {
   message: string;
@@ -49,23 +50,18 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   eyebrow: {
+    ...typography.label,
     color: colors.red,
-    fontSize: 11,
-    fontWeight: "900",
-    letterSpacing: 1,
-    textTransform: "uppercase",
   },
   title: {
+    ...typography.screenTitle,
     marginTop: spacing.sm,
     color: colors.text,
-    fontSize: 28,
-    fontWeight: "900",
   },
   message: {
+    ...typography.body,
     marginTop: spacing.md,
     color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 22,
   },
   actions: {
     gap: spacing.sm,

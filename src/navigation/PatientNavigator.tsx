@@ -2,7 +2,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import type { ComponentProps } from "react";
 import { StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PatientHomeScreen } from "../screens/patient/PatientHomeScreen";
 import { FeaturePlaceholderScreen } from "../screens/shared/FeaturePlaceholderScreen";
@@ -59,10 +58,12 @@ export function PatientNavigator({ user, onLogout }: PatientNavigatorProps) {
       })}
     >
       <Tab.Screen name="Home" options={{ title: "Home" }}>
-        {() => (
-          <SafeAreaView edges={["top", "left", "right"]} style={styles.scene}>
-            <PatientHomeScreen onLogout={onLogout} user={user} />
-          </SafeAreaView>
+        {({ navigation }) => (
+          <PatientHomeScreen
+            onCheckIn={() => navigation.navigate("CheckIn")}
+            onLogout={onLogout}
+            user={user}
+          />
         )}
       </Tab.Screen>
       <Tab.Screen name="Progress" options={{ title: "Progress" }}>

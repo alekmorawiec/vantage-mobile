@@ -8,6 +8,7 @@ import {
 import { colors } from "../theme/colors";
 import { radii } from "../theme/radii";
 import { spacing } from "../theme/spacing";
+import { typography } from "../theme/typography";
 
 type AppButtonProps = PressableProps & {
   label: string;
@@ -24,6 +25,7 @@ export function AppButton({
   return (
     <Pressable
       {...props}
+      accessibilityRole={props.accessibilityRole ?? "button"}
       disabled={disabled}
       style={({ pressed }) => [
         styles.base,
@@ -58,8 +60,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   label: {
-    fontSize: 15,
-    fontWeight: "800",
+    ...typography.button,
   },
   primaryLabel: {
     color: colors.accentInk,
@@ -71,8 +72,8 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   pressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.99 }],
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
   disabled: {
     opacity: 0.5,

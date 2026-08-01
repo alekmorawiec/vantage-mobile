@@ -6,6 +6,7 @@ import { BrandMark } from "../../components/BrandMark";
 import { colors } from "../../theme/colors";
 import { radii } from "../../theme/radii";
 import { spacing } from "../../theme/spacing";
+import { typography } from "../../theme/typography";
 
 type AccountSetupRequiredScreenProps = {
   message: string;
@@ -56,24 +57,19 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   eyebrow: {
+    ...typography.label,
     marginTop: spacing.xl,
     color: colors.accent,
-    fontSize: 11,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
   },
   title: {
+    ...typography.display,
     marginTop: spacing.sm,
     color: colors.text,
-    fontSize: 32,
-    fontWeight: "900",
   },
   message: {
+    ...typography.body,
     marginTop: spacing.md,
     color: colors.textMuted,
-    fontSize: 16,
-    lineHeight: 24,
   },
   notice: {
     marginTop: spacing.xxl,
@@ -84,15 +80,14 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   noticeTitle: {
+    ...typography.bodyMuted,
     color: colors.text,
-    fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   noticeText: {
+    ...typography.bodyMuted,
     marginTop: spacing.sm,
     color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 20,
   },
   actions: {
     gap: spacing.sm,

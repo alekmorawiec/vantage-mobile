@@ -25,6 +25,65 @@ const membershipColumns =
   "id,organization_id,profile_id,role,status,created_at,updated_at";
 const patientColumns =
   "id,profile_id,organization_id,clinic_id,status,created_at,updated_at";
+const JWT_TIMING_RETRY_DELAY_MS = 750;
+
+type QueryError = {
+  code?: unknown;
+  message?: unknown;
+};
+
+function isFutureJwtTimingError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const { code, message } = error as QueryError;
+
+  return (
+    code === "PGRST303" &&
+    typeof message === "string" &&
+    message.toLowerCase().includes("jwt issued at future")
+  );
+}
+
+function wait(milliseconds: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+async function queryUserData(userId: string) {
+  const [profileResult, membershipsResult, patientResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(profileColumns)
+      .eq("id", userId)
+      .maybeSingle<Profile>(),
+    supabase
+      .from("organization_memberships")
+      .select(membershipColumns)
+      .eq("profile_id", userId)
+      .returns<OrganizationMembership[]>(),
+    supabase
+      .from("patients")
+      .select(patientColumns)
+      .eq("profile_id", userId)
+      .maybeSingle<Patient>(),
+  ]);
+
+  const queryError =
+    profileResult.error ?? membershipsResult.error ?? patientResult.error;
+
+  if (queryError) {
+    throw queryError;
+  }
+
+  return {
+    profile: profileResult.data,
+    memberships: membershipsResult.data ?? [],
+    patient: patientResult.data,
+  };
+}
 
 export function UserProvider({ children }: PropsWithChildren) {
   const { user } = useAuth();
@@ -54,39 +113,53 @@ export function UserProvider({ children }: PropsWithChildren) {
     setError(null);
 
     try {
-      const [profileResult, membershipsResult, patientResult] =
-        await Promise.all([
-          supabase
-            .from("profiles")
-            .select(profileColumns)
-            .eq("id", userId)
-            .maybeSingle<Profile>(),
-          supabase
-            .from("organization_memberships")
-            .select(membershipColumns)
-            .eq("profile_id", userId)
-            .returns<OrganizationMembership[]>(),
-          supabase
-            .from("patients")
-            .select(patientColumns)
-            .eq("profile_id", userId)
-            .maybeSingle<Patient>(),
-        ]);
+      let userData;
+      let recoveredFutureJwt = false;
+
+      try {
+        userData = await queryUserData(userId);
+      } catch (initialError: unknown) {
+        if (!isFutureJwtTimingError(initialError)) {
+          throw initialError;
+        }
+
+        await wait(JWT_TIMING_RETRY_DELAY_MS);
+
+        if (currentRequestId !== requestId.current) {
+          return;
+        }
+
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
+
+        if (sessionError) {
+          throw sessionError;
+        }
+
+        if (sessionData.session?.user.id !== userId) {
+          throw new Error(
+            "The authenticated session changed while loading the Vantage account.",
+          );
+        }
+
+        userData = await queryUserData(userId);
+        recoveredFutureJwt = true;
+      }
 
       if (currentRequestId !== requestId.current) {
         return;
       }
 
-      const queryError =
-        profileResult.error ?? membershipsResult.error ?? patientResult.error;
-
-      if (queryError) {
-        throw queryError;
+      if (recoveredFutureJwt && __DEV__) {
+        console.warn("Recovered a transient authenticated-user JWT timing error.", {
+          code: "PGRST303",
+          retryCount: 1,
+        });
       }
 
-      setProfile(profileResult.data);
-      setMemberships(membershipsResult.data ?? []);
-      setPatient(patientResult.data);
+      setProfile(userData.profile);
+      setMemberships(userData.memberships);
+      setPatient(userData.patient);
     } catch (loadError: unknown) {
       if (currentRequestId !== requestId.current) {
         return;

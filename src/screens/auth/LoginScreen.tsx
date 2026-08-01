@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -7,15 +7,18 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
 } from "react-native";
 
 import { AppButton } from "../../components/AppButton";
 import { AppInput } from "../../components/AppInput";
 import { BrandMark } from "../../components/BrandMark";
 import { useAuth } from "../../features/auth/AuthContext";
+import { getRememberedEmail, rememberEmail } from "../../features/auth/rememberedEmail";
 import { colors } from "../../theme/colors";
 import { radii } from "../../theme/radii";
 import { spacing } from "../../theme/spacing";
+import { typography } from "../../theme/typography";
 
 type AuthMode = "signIn" | "signUp";
 
@@ -28,6 +31,21 @@ export function LoginScreen() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const isSubmittingRef = useRef(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    void getRememberedEmail().then((rememberedEmail) => {
+      if (mounted && rememberedEmail) {
+        setEmail(rememberedEmail);
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   function validate() {
     if (mode === "signUp" && !name.trim()) {
@@ -46,6 +64,10 @@ export function LoginScreen() {
   }
 
   async function submit() {
+    if (isSubmittingRef.current) {
+      return;
+    }
+
     const validationMessage = validate();
 
     if (validationMessage) {
@@ -54,11 +76,13 @@ export function LoginScreen() {
     }
 
     setErrorMessage("");
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
 
     try {
       if (mode === "signIn") {
         await signIn(email, password);
+        await rememberEmail(email);
       } else {
         const result = await signUp(name, email, password, "patient");
 
@@ -78,6 +102,7 @@ export function LoginScreen() {
           : "Authentication failed. Please try again.",
       );
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }
@@ -176,16 +201,21 @@ export function LoginScreen() {
           ) : null}
 
           <AppButton
+            accessibilityLabel={mode === "signIn" ? "Log in to Vantage" : "Create patient account"}
             disabled={isSubmitting}
-            label={
-              isSubmitting
-                ? "Please wait…"
-                : mode === "signIn"
-                  ? "Log in"
-                  : "Create patient account"
-            }
+            label={mode === "signIn" ? "Log in" : "Create patient account"}
             onPress={submit}
           />
+          <View accessibilityLiveRegion="polite" style={styles.submitStatus}>
+            {isSubmitting ? (
+              <>
+                <ActivityIndicator color={colors.textMuted} size="small" />
+                <Text style={styles.submitStatusText}>
+                  {mode === "signIn" ? "Signing you in…" : "Creating your account…"}
+                </Text>
+              </>
+            ) : null}
+          </View>
         </View>
 
         <Text style={styles.securityNote}>
@@ -214,9 +244,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxxl,
   },
   brand: {
+    ...typography.sectionTitle,
     color: colors.text,
-    fontSize: 18,
-    fontWeight: "900",
     letterSpacing: 1.5,
   },
   brandSubtitle: {
@@ -228,15 +257,13 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   heading: {
+    ...typography.display,
     color: colors.text,
-    fontSize: 32,
-    fontWeight: "900",
   },
   subheading: {
+    ...typography.body,
     marginTop: spacing.sm,
     color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 22,
   },
   modeSwitch: {
     flexDirection: "row",
@@ -259,25 +286,31 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   inviteTitle: {
+    ...typography.bodyMuted,
     color: "#9CC9FF",
-    fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   inviteText: {
+    ...typography.caption,
     marginTop: spacing.xs,
     color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 18,
   },
   form: {
     gap: spacing.lg,
     marginTop: spacing.xl,
   },
   error: {
+    ...typography.caption,
     color: colors.red,
-    fontSize: 13,
-    lineHeight: 18,
   },
+  submitStatus: {
+    minHeight: 22,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+  submitStatusText: { ...typography.caption, color: colors.textMuted },
   securityNote: {
     marginTop: spacing.lg,
     color: colors.textSubtle,

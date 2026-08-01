@@ -1,10 +1,13 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-import { AppButton } from "../../components/AppButton";
+import { AppCard } from "../../components/AppCard";
 import { MetricCard } from "../../components/MetricCard";
+import { Screen } from "../../components/Screen";
+import { ScreenHeader } from "../../components/ScreenHeader";
+import { SectionHeader } from "../../components/SectionHeader";
 import { colors } from "../../theme/colors";
-import { radii } from "../../theme/radii";
 import { spacing } from "../../theme/spacing";
+import { typography } from "../../theme/typography";
 import type { AppUser } from "../../types/auth";
 
 type ProviderHomeScreenProps = {
@@ -41,18 +44,8 @@ export function ProviderHomeScreen({
   onLogout,
 }: ProviderHomeScreenProps) {
   return (
-    <ScrollView
-      contentContainerStyle={styles.content}
-      style={styles.screen}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.eyebrow}>Provider dashboard</Text>
-          <Text style={styles.heading}>Welcome, {user.name}</Text>
-        </View>
-        <AppButton label="Log out" variant="ghost" onPress={onLogout} />
-      </View>
+    <Screen scroll contentContainerStyle={styles.content}>
+      <ScreenHeader eyebrow="Provider dashboard" onLogout={onLogout} title={`Welcome, ${user.name}`} />
 
       <View style={styles.metricsRow}>
         <MetricCard
@@ -69,19 +62,19 @@ export function ProviderHomeScreen({
         />
       </View>
 
-      <Text style={styles.sectionTitle}>Clinical alerts</Text>
+      <SectionHeader title="Clinical alerts" />
 
-      <View style={styles.alertCard}>
+      <AppCard style={styles.alertCard}>
         <Text style={styles.alertTitle}>Patient B adherence dropped to 43%</Text>
         <Text style={styles.alertDetail}>
           Consider outreach before the next visit.
         </Text>
-      </View>
+      </AppCard>
 
-      <Text style={styles.sectionTitle}>Your caseload</Text>
+      <SectionHeader title="Your caseload" />
 
       {patients.map((patient) => (
-        <View key={patient.name} style={styles.patientCard}>
+        <AppCard key={patient.name} style={styles.patientCard}>
           <View style={styles.patientTopRow}>
             <View>
               <Text style={styles.patientName}>{patient.name}</Text>
@@ -104,75 +97,37 @@ export function ProviderHomeScreen({
             <Text style={styles.metricLabel}>HEP adherence</Text>
             <Text style={styles.metricValue}>{patient.adherence}</Text>
           </View>
-        </View>
+        </AppCard>
       ))}
-    </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   content: {
-    padding: spacing.xl,
     paddingBottom: spacing.xxxl,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-  },
-  eyebrow: {
-    color: colors.textSubtle,
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
-  heading: {
-    marginTop: spacing.xs,
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: "900",
   },
   metricsRow: {
     flexDirection: "row",
     gap: spacing.md,
     marginTop: spacing.xl,
   },
-  sectionTitle: {
-    marginTop: spacing.xxl,
-    marginBottom: spacing.md,
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "900",
-  },
   alertCard: {
-    borderWidth: 1,
     borderColor: "#FF5C5C40",
-    borderRadius: radii.lg,
     backgroundColor: "#241010",
-    padding: spacing.lg,
   },
   alertTitle: {
+    ...typography.bodyMuted,
     color: "#FFB0B0",
-    fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   alertDetail: {
+    ...typography.caption,
     marginTop: spacing.xs,
     color: colors.textMuted,
-    fontSize: 12,
   },
   patientCard: {
     marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
   },
   patientTopRow: {
     flexDirection: "row",
@@ -180,14 +135,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   patientName: {
+    ...typography.body,
     color: colors.text,
-    fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   patientDetail: {
+    ...typography.caption,
     marginTop: spacing.xs,
     color: colors.textMuted,
-    fontSize: 12,
   },
   status: {
     color: colors.accent,
@@ -215,8 +170,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   metricValue: {
+    ...typography.sectionTitle,
     color: colors.text,
-    fontSize: 16,
-    fontWeight: "900",
   },
 });
